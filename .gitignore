@@ -1,0 +1,10 @@
+ai_module/config.py
+authorization_module/backend/config.py
+authorization_module/backend/test.py
+__pycache__/
+*.pyc
+
+*.mp4
+*.avi
+*.pt
+.env
