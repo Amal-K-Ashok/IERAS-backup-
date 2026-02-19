@@ -16,12 +16,12 @@ from engine.multithreading_tracker import MultiThreadingTracker
 def fetch_cameras():
     """Fetch all active cameras from Supabase"""
     try:
-        result = supabase.table("cameras").select("camera_id, latitude, longitude, cctv_url").execute()
+        result = supabase.table("cameras").select("camera_id, latitude, longitude, location_name, cctv_url").execute()
         
         if result.data and len(result.data) > 0:
             print(f"✅ Found {len(result.data)} camera(s) in database:")
             for cam in result.data:
-                print(f"   - {cam['camera_id']}: {cam['cctv_url']}")
+                print(f"   - {cam['camera_id']}: {cam['cctv_url']} ({cam['location_name']})")
             return result.data
         else:
             print("⚠️ No cameras found in database")
@@ -35,13 +35,14 @@ def fetch_cameras():
 # SUPABASE HELPERS
 # --------------------------------------------------
 
-def create_accident_event(camera_id, latitude, longitude, severity="medium"):
+def create_accident_event(camera_id, latitude, longitude, location_name, severity="medium"):
     """Create accident event with camera-specific location"""
     try:
         res = supabase.table("accidents").insert({
             "camera_id": camera_id,
             "latitude": latitude,
             "longitude": longitude,
+            "location": location_name,
             "severity": severity,
             "status": "DETECTED"
         }).execute()
@@ -201,7 +202,8 @@ def track_videos_multithreaded(cameras_data, model_path):
             "last_event_time": 0,
             "camera_id": cam['camera_id'],
             "latitude": cam['latitude'],
-            "longitude": cam['longitude']
+            "longitude": cam['longitude'],
+            "location_name": cam['location_name']
         }
         camera_metadata[video_source] = cam
         print(f"✅ Initialized detector for {cam['camera_id']} (FPS: {fps})")
@@ -263,7 +265,8 @@ def track_videos_multithreaded(cameras_data, model_path):
                         accident_id = create_accident_event(
                             state["camera_id"],
                             state["latitude"],
-                            state["longitude"]
+                            state["longitude"],
+                            state["location_name"]
                         )
                         if accident_id:  # Only proceed if DB insert succeeded
                             state["accident_id"] = accident_id
